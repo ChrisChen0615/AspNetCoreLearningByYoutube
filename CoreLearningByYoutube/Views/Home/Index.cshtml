@@ -1,0 +1,40 @@
+﻿@model IEnumerable<Employee>
+
+@{
+    ViewBag.Title = "Employee List";
+}
+
+<div class="card-deck">
+    @foreach (var e in Model)
+    {
+        var photoPath = "~/Images/" + (e.PhotoPath ?? "user_employee.png");
+
+        <div class="card m-3" style="min-width:18rem;max-width:30.5%">
+            <div class="card-header">
+                <h3>@e.Name</h3>
+            </div>
+            <img class="card-img-top imageThumbnail" src="@photoPath" asp-append-version="true" />
+
+            <div class="card-footer text-center">
+                @*連結寫法*@
+                @*1.html寫法*@
+                @*<a href="/home/details/@e.Id" class="btn btn-primary">View</a>*@
+
+                @*2.html helper寫法*@
+                @*@Html.ActionLink("View", "details", "home", new { id = e.Id })*@
+
+                @*3.html helper寫法*@
+                @*<a href="@Url.Action("details", "home", new { id = e.Id })"
+                    class="btn btn-primary">View</a>*@
+
+                @*4.tag helper寫法*@
+                <a asp-controller="home" asp-action="details" asp-route-id="@e.Id"
+                   class="btn btn-primary">檢視</a>
+
+                <a asp-controller="home" asp-action="edit" asp-route-id="@e.Id" 
+                   class="btn btn-primary">編輯</a>
+                <a href="#" class="btn btn-danger">刪除</a>
+            </div>
+        </div>
+    }
+</div>

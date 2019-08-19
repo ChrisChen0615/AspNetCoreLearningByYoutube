@@ -1,0 +1,49 @@
+﻿@model IEnumerable<IdentityRole>
+@{
+    ViewBag.Title = "所有角色";
+}
+
+<h1>所有角色</h1>
+
+@if (Model.Any())
+{
+    <a class="btn btn-primary" style="width:auto"
+       asp-controller="administration" asp-action="create">
+        新增
+    </a>
+    foreach (var r in Model)
+    {
+        <div class="card mb-3">
+            <div class="card-header">
+                角色 Id : @r.Id
+            </div>
+            <div class="card-body">
+                <h5 class="card-title">@r.Name</h5>
+            </div>
+            <div class="card-footer">
+                <a class="btn btn-primary" asp-action="EditRole"
+                   asp-controller="Administration" asp-route-id="@r.Id">
+                    編輯
+                </a>
+                <a href="#" class="btn btn-danger">刪除</a>
+            </div>
+        </div>
+    }
+}
+else
+{
+    <div class="card">
+        <div class="card-header">
+            尚未有角色
+        </div>
+        <div class="card-body">
+            <div class="card-title">
+                <h5>使用下方按鈕新增角色</h5>
+            </div>
+            <a class="btn btn-primary" style="width:auto"
+               asp-controller="administration" asp-action="create">
+                新增
+            </a>
+        </div>
+    </div>
+}

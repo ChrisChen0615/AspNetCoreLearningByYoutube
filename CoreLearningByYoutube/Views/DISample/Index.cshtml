@@ -1,0 +1,28 @@
+﻿@model string
+
+@using CoreLearningByYoutube.Models.DISample
+
+@inject ISampleTransient sampleTransient
+@inject ISampleScoped sampleScoped
+@inject ISampleSingleton sampleSingleton
+@inject SampleService sampleService
+
+<table>
+    <colgroup>
+        <col width="100" />
+    </colgroup>
+    <tbody>
+        <tr><th colspan="2">Controler</th></tr>
+        @Html.Raw(Model)
+
+        <tr><th colspan="2">Service</th></tr>
+        <tr><td>Transient</td><td>@sampleService.SampleTransient.Id</td></tr>
+        <tr><td>Scoped</td><td>@sampleService.SampleScoped.Id</td></tr>
+        <tr><td>Singleton</td><td>@sampleService.SampleSingleton.Id</td></tr>
+
+        <tr><th colspan="2">View</th></tr>
+        <tr><td>Transient</td><td>@sampleTransient.Id</td></tr>
+        <tr><td>Scoped</td><td>@sampleScoped.Id</td></tr>
+        <tr><td>Singleton</td><td>@sampleSingleton.Id</td></tr>
+    </tbody>
+</table>

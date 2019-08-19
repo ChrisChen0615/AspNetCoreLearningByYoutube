@@ -1,0 +1,28 @@
+﻿
+@{
+    ViewBag.Title = "例外錯誤";
+}
+<h3>例外錯誤發生</h3>
+@*呈現在view上*@
+@*<h3>例外錯誤:</h3>
+<div class="alert alert-danger">
+    <h5>例外路徑</h5>
+    <hr />
+    <p>@ViewBag.ExceptionPath</p>
+</div>
+
+<div class="alert alert-danger">
+    <h5>例外訊息</h5>
+    <hr />
+    <p>@ViewBag.ExceptionMessage</p>
+</div>
+
+<div class="alert alert-danger">
+    <h5>例外堆疊</h5>
+    <hr />
+    <p>@ViewBag.Stacktrace</p>
+</div>*@
+
+<a asp-action="index" asp-controller="home" class="btn btn-outline-success" style="width:auto">
+    返回清單
+</a>
