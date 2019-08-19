@@ -6,20 +6,25 @@ using CoreLearningByYoutube.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace CoreLearningByYoutube.Controllers
 {
-    [Authorize(Roles ="admin")]
+    [Authorize(Roles = "admin")]
     public class AdministrationController : Controller
     {
         private readonly RoleManager<IdentityRole> _roleManager;
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly ILogger<AdministrationController> _logger;
 
         public AdministrationController(RoleManager<IdentityRole> roleManager,
-            UserManager<ApplicationUser> userManager)
+            UserManager<ApplicationUser> userManager,
+            ILogger<AdministrationController> logger)
         {
             _roleManager = roleManager;
             _userManager = userManager;
+            _logger = logger;
         }
 
         public IActionResult Index()
@@ -51,7 +56,7 @@ namespace CoreLearningByYoutube.Controllers
         {
             var user = await _userManager.FindByIdAsync(id);
 
-            if(user == null)
+            if (user == null)
             {
                 ViewBag.ErrorMessage = "使用者Id不存在";
                 return View("NotFound");
@@ -101,7 +106,7 @@ namespace CoreLearningByYoutube.Controllers
                     return RedirectToAction("ListUsers");
                 }
 
-                foreach(var error in resutl.Errors)
+                foreach (var error in resutl.Errors)
                 {
                     ModelState.AddModelError("", error.Description);
                 }
@@ -211,6 +216,80 @@ namespace CoreLearningByYoutube.Controllers
         }
 
         /// <summary>
+        /// 刪除使用者
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        [HttpPost]
+        public async Task<IActionResult> DeleteUser(string id)
+        {
+            var user = await _userManager.FindByIdAsync(id);
+
+            if (user == null)
+            {
+                ViewBag.ErrorMessage = "使用者Id不存在";
+                return View("NotFound");
+            }
+
+            var result = await _userManager.DeleteAsync(user);
+
+            if (result.Succeeded)
+            {
+                return RedirectToAction("ListUsers");
+            }
+
+            foreach (var error in result.Errors)
+            {
+                ModelState.AddModelError("", error.Description);
+            }
+
+            return View("ListUsers");
+        }
+
+        /// <summary>
+        /// 刪除角色
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        [HttpPost]
+        public async Task<IActionResult> DeleteRole(string id)
+        {
+            var role = await _roleManager.FindByIdAsync(id);
+
+            if (role == null)
+            {
+                ViewBag.ErrorMessage = "使用者Id不存在";
+                return View("NotFound");
+            }
+
+            try
+            {
+                var result = await _roleManager.DeleteAsync(role);
+
+                if (result.Succeeded)
+                {
+                    return RedirectToAction("ListRoles");
+                }
+
+                foreach (var error in result.Errors)
+                {
+                    ModelState.AddModelError("", error.Description);
+                }
+
+                return View("ListRoles");
+            }
+            catch (DbUpdateException ex)
+            {
+                _logger.LogError($"Error delete is:{ex.Message}");
+                ViewBag.ErrorTitle = $"{role.Name}:角色已被使用";
+                ViewBag.ErrorMessage = $"{role.Name} 無法刪除角色，" +
+                    $"因為已指派此角色給使用者，" +
+                    $"請先移除使用者角色在進行刪除!";
+                return View("Error");
+            }
+        }
+
+        /// <summary>
         /// 編輯角色下的所屬使用者view
         /// </summary>
         /// <param name="roleId"></param>
@@ -230,7 +309,7 @@ namespace CoreLearningByYoutube.Controllers
 
             var model = new List<UserRoleViewModel>();
 
-            foreach(var user in _userManager.Users)
+            foreach (var user in _userManager.Users)
             {
                 var userRoleViewModel = new UserRoleViewModel
                 {
@@ -238,7 +317,7 @@ namespace CoreLearningByYoutube.Controllers
                     UserName = user.UserName,
                 };
 
-                if(await _userManager.IsInRoleAsync(user, role.Name))
+                if (await _userManager.IsInRoleAsync(user, role.Name))
                 {
                     userRoleViewModel.IsSelected = true;
                 }
@@ -258,7 +337,7 @@ namespace CoreLearningByYoutube.Controllers
         /// <param name="roleId"></param>
         /// <returns></returns>
         [HttpPost]
-        public async Task<IActionResult> EditUsersInRole(List<UserRoleViewModel> model,string roleId)
+        public async Task<IActionResult> EditUsersInRole(List<UserRoleViewModel> model, string roleId)
         {
             var role = await _roleManager.FindByIdAsync(roleId);
 
@@ -268,12 +347,12 @@ namespace CoreLearningByYoutube.Controllers
                 return View("NotFound");
             }
 
-            for(int i = 0; i < model.Count; i++)
+            for (int i = 0; i < model.Count; i++)
             {
                 var user = await _userManager.FindByIdAsync(model[i].UserId);
                 IdentityResult result = null;
                 //判斷是否已勾選、使用者是否已擁有此角色
-                if (model[i].IsSelected && !(await _userManager.IsInRoleAsync(user,role.Name)))
+                if (model[i].IsSelected && !(await _userManager.IsInRoleAsync(user, role.Name)))
                 {
                     result = await _userManager.AddToRoleAsync(user, role.Name);
                 }
@@ -296,6 +375,78 @@ namespace CoreLearningByYoutube.Controllers
             }
 
             return RedirectToAction("EditRole", new { Id = roleId });
+        }
+
+        /// <summary>
+        /// 編輯使用者>角色管理 view
+        /// </summary>
+        /// <param name="userId"></param>
+        /// <returns></returns>
+        [HttpGet]
+        public async Task<IActionResult> ManageUserRoles(string userId)
+        {
+            ViewBag.userId = userId;
+
+            var user = await _userManager.FindByIdAsync(userId);
+
+            if (user == null)
+            {
+                ViewBag.ErrorMessage = $"使用者Id:{userId}不存在";
+                return View("NotFound");
+            }
+
+            var model = new List<UserRolesViewModel>();
+
+            foreach (var role in _roleManager.Roles)
+            {
+                var userRolesViewModel = new UserRolesViewModel
+                {
+                    RoleId = role.Id,
+                    RoleName = role.Name
+                };
+
+                userRolesViewModel.IsSelected = await _userManager.IsInRoleAsync(user, role.Name);
+                model.Add(userRolesViewModel);
+            }
+
+            return View(model);
+        }
+
+        /// <summary>
+        /// 編輯使用者>角色管理 儲存
+        /// </summary>
+        /// <param name="model"></param>
+        /// <param name="userId"></param>
+        /// <returns></returns>
+        [HttpPost]
+        public async Task<IActionResult> ManageUserRoles(List<UserRolesViewModel> model, string userId)
+        {
+            var user = await _userManager.FindByIdAsync(userId);
+
+            if (user == null)
+            {
+                ViewBag.ErrorMessage = $"使用者Id:{userId}不存在";
+                return View("NotFound");
+            }
+            var roles = await _userManager.GetRolesAsync(user);
+            var result = await _userManager.RemoveFromRolesAsync(user, roles);
+
+            if (!result.Succeeded)
+            {
+                ModelState.AddModelError("", "無法移除已存在的使用者角色");
+                return View(model);
+            }
+
+            result = await _userManager.AddToRolesAsync(user,
+                model.Where(x => x.IsSelected).Select(y => y.RoleName));
+
+            if (!result.Succeeded)
+            {
+                ModelState.AddModelError("", "無法加入已選擇的使用者角色");
+                return View(model);
+            }
+
+            return RedirectToAction("EditUser", new { Id = userId });
         }
     }
 }

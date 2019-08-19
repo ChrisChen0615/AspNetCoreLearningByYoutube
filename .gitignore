@@ -167,3 +167,5 @@
 /.vs/CoreLearningByYoutube/v16/Server/sqlite3/storage.ide
 /.vs/CoreLearningByYoutube/v16/Server/sqlite3/storage.ide-shm
 /.vs/CoreLearningByYoutube/v16/Server/sqlite3/storage.ide-wal
+/CoreLearningByYoutube/obj
+/CoreLearningByYoutube/bin

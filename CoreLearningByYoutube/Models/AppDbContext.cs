@@ -54,6 +54,14 @@ namespace CoreLearningByYoutube.Models
             //IdentityDbContext，需先create identityuser,identityrole資料表
             base.OnModelCreating(modelBuilder);
             modelBuilder.Seed();
+
+            //當刪除資料時，此資料內容為其他資料表的foreignkey
+            //則無法刪除
+            foreach(var foreignkey in modelBuilder.Model.GetEntityTypes()
+                .SelectMany(e => e.GetForeignKeys()))
+            {
+                foreignkey.DeleteBehavior = DeleteBehavior.Restrict;
+            }
         }
     }
 }

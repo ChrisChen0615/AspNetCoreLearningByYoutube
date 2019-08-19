@@ -21,11 +21,24 @@
                 <h5 class="card-title">@r.Name</h5>
             </div>
             <div class="card-footer">
-                <a class="btn btn-primary" asp-action="EditRole"
-                   asp-controller="Administration" asp-route-id="@r.Id">
-                    編輯
-                </a>
-                <a href="#" class="btn btn-danger">刪除</a>
+                <form asp-action="DeleteRole" asp-route-id="@r.Id" method="post">
+                    <a class="btn btn-primary" asp-action="EditRole"
+                       asp-controller="Administration" asp-route-id="@r.Id">
+                        編輯
+                    </a>
+
+                    <span id="confirmDeleteSpan_@r.Id" style="display:none">
+                        <span>確認刪除此角色?</span>
+                        <button type="submit" class="btn btn-danger">是</button>
+                        <a href="#" class="btn btn-primary"
+                           onclick="confirmDelete('@r.Id', false)">否</a>
+                    </span>
+
+                    <span id="deleteSpan_@r.Id">
+                        <a href="#" class="btn btn-danger"
+                           onclick="confirmDelete('@r.Id',true)">刪除</a>
+                    </span>
+                </form>
             </div>
         </div>
     }
@@ -46,4 +59,8 @@ else
             </a>
         </div>
     </div>
+}
+
+@section Scripts{
+    <script src="~/js/Common.js"></script>
 }
