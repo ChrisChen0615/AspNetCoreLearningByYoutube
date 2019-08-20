@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using CoreLearningByYoutube.Models;
 using Microsoft.AspNetCore.Authorization;
@@ -448,5 +449,84 @@ namespace CoreLearningByYoutube.Controllers
 
             return RedirectToAction("EditUser", new { Id = userId });
         }
+
+        /// <summary>
+        /// 編輯使用者>權力管理 view
+        /// </summary>
+        /// <param name="userId"></param>
+        /// <returns></returns>
+        [HttpGet]
+        public async Task<IActionResult> ManageUserClaims(string userId)
+        {
+            var user = await _userManager.FindByIdAsync(userId);
+
+            if (user == null)
+            {
+                ViewBag.ErrorMessage = $"使用者Id:{userId}不存在";
+                return View("NotFound");
+            }
+
+            var existingUserClaims = await _userManager.GetClaimsAsync(user);
+
+            var model = new UserClaimsViewModel
+            {
+                UserId = userId
+            };
+
+            foreach (var claim in ClaimsStore.AllClaims)
+            {
+                var userClaim = new UserClaim
+                {
+                    ClaimType = claim.Type
+                };
+
+                if (existingUserClaims.Any(c => c.Type.Equals(claim.Type)))
+                {
+                    userClaim.IsSelected = true;
+                }
+                model.Claims.Add(userClaim);
+            }
+
+            return View(model);
+        }
+
+        /// <summary>
+        /// 編輯使用者>權力管理 儲存
+        /// </summary>
+        /// <param name="model"></param>
+        /// <param name="userId"></param>
+        /// <returns></returns>
+        [HttpPost]
+        public async Task<IActionResult> ManageUserClaims(UserClaimsViewModel model, string userId)
+        {
+            var user = await _userManager.FindByIdAsync(userId);
+
+            if (user == null)
+            {
+                ViewBag.ErrorMessage = $"使用者Id:{userId}不存在";
+                return View("NotFound");
+            }
+            var claims = await _userManager.GetClaimsAsync(user);
+            //與其寫一堆if else,倒不如先移除再新增即可
+            var result = await _userManager.RemoveClaimsAsync(user, claims);
+
+            if (!result.Succeeded)
+            {
+                ModelState.AddModelError("", "無法移除已存在的使用者權力");
+                return View(model);
+            }
+
+            result = await _userManager.AddClaimsAsync(user,
+                model.Claims.Where(c => c.IsSelected).Select(c => new Claim(c.ClaimType, c.ClaimType)));
+
+            if (!result.Succeeded)
+            {
+                ModelState.AddModelError("", "無法加入已選擇的使用者權力");
+                return View(model);
+            }
+
+            return RedirectToAction("EditUser", new { Id = userId });
+        }
+
     }
 }
