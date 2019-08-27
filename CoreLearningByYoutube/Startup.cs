@@ -63,6 +63,14 @@ namespace CoreLearningByYoutube
                 options.Filters.Add(new AuthorizeFilter(policy));
             });
 
+            //新增驗證role claim,controller判定授權用
+            services.AddAuthorization(options =>
+            {
+                options.AddPolicy("DeleteRolePolicy",
+                    policy => policy.RequireClaim("Delete Role")
+                                    .RequireClaim("Create Role"));
+            });
+
             //services.AddSingleton<IEmployeeRepository, MockEmployeeRepository>();
             //直接替換repository
             services.AddScoped<IEmployeeRepository, SQLEmployeeRepository>();
