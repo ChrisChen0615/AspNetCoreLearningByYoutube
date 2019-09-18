@@ -34,6 +34,13 @@ namespace CoreLearningByYoutube.Controllers
         }
 
         [HttpGet]
+        [AllowAnonymous]
+        public IActionResult AccessDenied()
+        {
+            return View();
+        }
+
+        [HttpGet]
         public IActionResult ListRoles()
         {
             var roles = _roleManager.Roles;
@@ -72,7 +79,7 @@ namespace CoreLearningByYoutube.Controllers
                 Email = user.Email,
                 UserName = user.UserName,
                 City = user.City,
-                Claims = userClaims.Select(c => c.Value).ToList(),
+                Claims = userClaims.Select(c => $"{c.Type} : {c.Value}").ToList(),
                 Roles = userRoles
             };
 
@@ -385,6 +392,7 @@ namespace CoreLearningByYoutube.Controllers
         /// <param name="userId"></param>
         /// <returns></returns>
         [HttpGet]
+        [Authorize(Policy = "EditRolePolicy")]
         public async Task<IActionResult> ManageUserRoles(string userId)
         {
             ViewBag.userId = userId;
@@ -421,6 +429,7 @@ namespace CoreLearningByYoutube.Controllers
         /// <param name="userId"></param>
         /// <returns></returns>
         [HttpPost]
+        [Authorize(Policy = "EditRolePolicy")]
         public async Task<IActionResult> ManageUserRoles(List<UserRolesViewModel> model, string userId)
         {
             var user = await _userManager.FindByIdAsync(userId);
@@ -481,7 +490,7 @@ namespace CoreLearningByYoutube.Controllers
                     ClaimType = claim.Type
                 };
 
-                if (existingUserClaims.Any(c => c.Type.Equals(claim.Type)))
+                if (existingUserClaims.Any(c => c.Type.Equals(claim.Type) && c.Value.Equals("true")))
                 {
                     userClaim.IsSelected = true;
                 }
@@ -518,7 +527,7 @@ namespace CoreLearningByYoutube.Controllers
             }
 
             result = await _userManager.AddClaimsAsync(user,
-                model.Claims.Where(c => c.IsSelected).Select(c => new Claim(c.ClaimType, c.ClaimType)));
+                model.Claims.Select(c => new Claim(c.ClaimType, c.IsSelected ? "true" : "false")));
 
             if (!result.Succeeded)
             {

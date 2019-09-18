@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using CoreLearningByYoutube.Models;
 using CoreLearningByYoutube.Models.DISample;
+using CoreLearningByYoutube.Seruirty;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -63,12 +64,27 @@ namespace CoreLearningByYoutube
                 options.Filters.Add(new AuthorizeFilter(policy));
             });
 
+            //改變預設拒絕存取路徑錯誤view
+            services.ConfigureApplicationCookie(options =>
+            {
+                options.AccessDeniedPath = new PathString("/Administration/AccessDenied");
+            });
+
             //新增驗證role claim,controller判定授權用
             services.AddAuthorization(options =>
             {
                 options.AddPolicy("DeleteRolePolicy",
-                    policy => policy.RequireClaim("Delete Role")
-                                    .RequireClaim("Create Role"));
+                    policy => policy.RequireClaim("Delete Role"));
+
+                options.AddPolicy("EditRolePolicy",
+                    policy => policy.AddRequirements(new ManageAdminRolesAndClaimsRequirement()));
+                //policy => policy.RequireClaim("Edit Role", "true"));
+
+                //當其一handler失敗後不執行後面的handler
+                options.InvokeHandlersAfterFailure = false;
+
+                options.AddPolicy("AdminRolePolicy",
+                    policy => policy.RequireClaim("Admin"));
             });
 
             //services.AddSingleton<IEmployeeRepository, MockEmployeeRepository>();
@@ -87,6 +103,12 @@ namespace CoreLearningByYoutube
             services.AddScoped<ISampleScoped, Sample>();
             services.AddSingleton<ISampleSingleton, Sample>();
             services.AddTransient<SampleService, SampleService>();
+
+            //handler可以串聯
+            //1.只能異動別人的
+            services.AddSingleton<IAuthorizationHandler, CanEditOnlyOtherAdminRolesAndClaimsHandler>();
+            //2.可以異動所有人的
+            services.AddSingleton<IAuthorizationHandler, SuperAdminHandler>();
         }
 
         // middleware，設定request pipeline
