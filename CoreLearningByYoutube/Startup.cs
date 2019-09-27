@@ -68,8 +68,8 @@ namespace CoreLearningByYoutube
             services.AddAuthentication()
                 .AddGoogle(options =>
                 {
-                    options.ClientId = "31699015510-tdqidlkpbva45l84drlaeosg8eijuq8a.apps.googleusercontent.com";
-                    options.ClientSecret = "x6GPFoixQISBILMonYKRRFm6";
+                    options.ClientId = "";
+                    options.ClientSecret = "";
                 });
 
             //改變預設拒絕存取路徑錯誤view
