@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using CoreLearningByYoutube.Models;
 using CoreLearningByYoutube.ViewModels;
@@ -29,12 +30,12 @@ namespace CoreLearningByYoutube.Controllers
         /// <returns></returns>
         /// 為什麼要同時存在post和get?因為當使用者輸入email欄位時就可以發出get 請求檢查;form submit為post請求        
         //[HttpPost][HttpGet]//此行可以使用下行替代
-        [AcceptVerbs("Get","Post")]
+        [AcceptVerbs("Get", "Post")]
         [AllowAnonymous]
         public async Task<IActionResult> IsEmailInUse(string email)
         {
             var user = await _userManager.FindByEmailAsync(email);
-            if(user == null)
+            if (user == null)
             {
                 return Json(true);
             }
@@ -48,8 +49,8 @@ namespace CoreLearningByYoutube.Controllers
         /// 註冊view
         /// </summary>
         /// <returns></returns>
-        [HttpGet]
         [AllowAnonymous]
+        [HttpGet]
         public IActionResult Register()
         {
             return View();
@@ -79,7 +80,7 @@ namespace CoreLearningByYoutube.Controllers
                 if (result.Succeeded)
                 {
                     //註冊新使用者後，假設目前已登入且擁有"Admin"角色權限，重新導向ListUsers
-                    if(_signInManager.IsSignedIn(User) && User.IsInRole("Admin"))
+                    if (_signInManager.IsSignedIn(User) && User.IsInRole("Admin"))
                     {
                         return RedirectToAction("ListUsers", "Administration");
                     }
@@ -113,11 +114,16 @@ namespace CoreLearningByYoutube.Controllers
         /// 登入view
         /// </summary>
         /// <returns></returns>
-        [HttpGet]
         [AllowAnonymous]
-        public IActionResult Login()
+        [HttpGet]
+        public async Task<IActionResult> Login(string returnUrl)
         {
-            return View();
+            var model = new LoginViewModel
+            {
+                ReturnUrl = returnUrl,
+                ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList()
+            };
+            return View(model);
         }
 
         /// <summary>
@@ -126,9 +132,9 @@ namespace CoreLearningByYoutube.Controllers
         /// <param name="model"></param>
         /// <param name="returnUrl">當未登入時，點擊功能跳轉登入view，此時returnUrl不為空</param>
         /// <returns></returns>
-        [HttpPost]
         [AllowAnonymous]
-        public async Task<IActionResult> Login(LoginViewModel model,string returnUrl)
+        [HttpPost]
+        public async Task<IActionResult> Login(LoginViewModel model, string returnUrl)
         {
             if (ModelState.IsValid)
             {
@@ -166,5 +172,103 @@ namespace CoreLearningByYoutube.Controllers
             return View(model);
         }
 
+        /// <summary>
+        /// 取得google登入
+        /// </summary>
+        /// <param name="model"></param>
+        /// <param name="returnUrl">當未登入時，點擊功能跳轉登入view，此時returnUrl不為空</param>
+        /// <returns></returns>
+        [AllowAnonymous]
+        [HttpPost]
+        public IActionResult ExternalLogin(string provider, string returnUrl)
+        {
+            //google登入後的導向網址
+            var redirectUrl = Url.Action("ExternalLoginCallback", "Account",
+                                    new { ReturnUrl = returnUrl });
+
+            var properties = _signInManager.ConfigureExternalAuthenticationProperties(provider, redirectUrl);
+            return new ChallengeResult(provider, properties);
+        }
+
+        /// <summary>
+        /// google驗證後的導向
+        /// </summary>
+        /// <param name="provider"></param>
+        /// <param name="returnUrl"></param>
+        /// <returns></returns>
+        [AllowAnonymous]        
+        public async Task<IActionResult> ExternalLoginCallback(string returnUrl = null, string remoteError = null)
+        {
+            returnUrl = returnUrl ?? Url.Content("~/");
+
+            var loginViewModel = new LoginViewModel
+            {
+                ReturnUrl = returnUrl,
+                ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList()
+            };
+
+            //1.檢查google是否回傳錯誤
+            if(remoteError != null)
+            {
+                ModelState.AddModelError(string.Empty, $"Error from external provider: {remoteError}");
+                return View("Login", loginViewModel);
+            }
+
+            //2.取得外部登入資訊
+            var info = await _signInManager.GetExternalLoginInfoAsync();
+            if(info == null)
+            {
+                ModelState.AddModelError(string.Empty, $"Error loading external login information.");
+                return View("Login", loginViewModel);
+            }
+
+            //3.使用外部資訊登入網站
+            //isPersisten:cookie
+            var signInResult = await _signInManager.ExternalLoginSignInAsync(info.LoginProvider,
+                                        info.ProviderKey, isPersistent: false, bypassTwoFactor: true);
+
+            //4.檢查登入結果
+            if (signInResult.Succeeded)
+            {
+                return LocalRedirect(returnUrl);
+            }
+            else
+            {
+                //5.取得登入者google email
+                var email = info.Principal.FindFirstValue(ClaimTypes.Email);
+
+                //6.檢查email
+                if(email != null)
+                {
+                    //7.取得使用者資訊by email
+                    var user = await _userManager.FindByEmailAsync(email);
+
+                    //8.無法取得使用者資訊則新增
+                    if(user == null)
+                    {
+                        user = new ApplicationUser
+                        {
+                            UserName = info.Principal.FindFirstValue(ClaimTypes.Email),
+                            Email =info.Principal.FindFirstValue(ClaimTypes.Email)
+                        };
+
+                        await _userManager.CreateAsync(user);
+                    }
+
+                    //9.新增使用者資訊，AspNetUsers,AspNetUserLogin資料表
+                    await _userManager.AddLoginAsync(user, info);
+                    //10.有使用者資訊則直接登入
+                    await _signInManager.SignInAsync(user, isPersistent: false);
+
+                    return LocalRedirect(returnUrl);
+                }
+
+                //6.無法從外部登入結果取得email
+                ViewBag.ErrorTitle = $"Email claim not received from: {info.LoginProvider}";
+                ViewBag.ErrorMessage = "請聯繫資訊人員";
+
+                return View("Error");
+            }
+        }
     }
 }

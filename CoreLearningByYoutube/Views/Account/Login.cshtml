@@ -4,33 +4,59 @@
     ViewBag.Title = "使用者登入";
 }
 
-<h1>使用者登入</h1>
-
-<div class="row">
-    <div class="col-md-12">
-        <form method="post">
-            <div asp-validation-summary="All" class="text-danger"></div>
-            <div class="form-group">
-                <label asp-for="Email"></label>
-                <input asp-for="Email" class="form-control" />
-                <span asp-validation-for="Email" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="Password"></label>
-                <input asp-for="Password" class="form-control" />
-                <span asp-validation-for="Password" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <div class="custom-control custom-checkbox">
-                    <input type="checkbox" class="custom-control-input" asp-for="RememberMe">
-                    <label class="custom-control-label" asp-for="RememberMe">
-                        記住我
-                    </label>
+    <div class="row">
+        <div class="col-md-6">
+            <h1>帳密登入</h1>
+            <hr />
+            <form method="post">
+                <div asp-validation-summary="All" class="text-danger"></div>
+                <div class="form-group">
+                    <label asp-for="Email"></label>
+                    <input asp-for="Email" class="form-control" />
+                    <span asp-validation-for="Email" class="text-danger"></span>
                 </div>
-            </div>
-            <div class="form-group">
-                <button type="submit" class="btn btn-primary">登入</button>
-            </div>
-        </form>
+                <div class="form-group">
+                    <label asp-for="Password"></label>
+                    <input asp-for="Password" class="form-control" />
+                    <span asp-validation-for="Password" class="text-danger"></span>
+                </div>
+                <div class="form-group">
+                    <div class="custom-control custom-checkbox">
+                        <input type="checkbox" class="custom-control-input" asp-for="RememberMe">
+                        <label class="custom-control-label" asp-for="RememberMe">
+                            記住我
+                        </label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <button type="submit" class="btn btn-primary">登入</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="col-md-6">
+            <h1>外部登入</h1>
+            <hr />
+            @{
+                if (Model.ExternalLogins.Count == 0)
+                {
+                    <div>無外部驗證設定</div>
+                }
+                else
+                {
+                    <form method="post" asp-action="ExternalLogin" asp-route-returnUrl="@Model.ReturnUrl">
+                        <div>
+                            @foreach(var provider in Model.ExternalLogins)
+                            {
+                                <button type="submit" class="btn btn-primary"
+                                        name="provider" value="@provider.Name"
+                                        title="使用@(provider.DisplayName)帳號">
+                                    @provider.DisplayName
+                                </button>
+                            }
+                        </div>
+                    </form>
+                }
+            }
+        </div>
     </div>
-</div>
