@@ -40,9 +40,15 @@ namespace CoreLearningByYoutube
             //建立indentity dbcontext
             services.AddIdentity<ApplicationUser, IdentityRole>(options =>
             {
+                //登入條件
+                //1.
                 options.Password.RequiredLength = 5;
                 //options.Password.RequiredUniqueChars = 1;
-            }).AddEntityFrameworkStores<AppDbContext>();
+
+                //2.email confirmed必須為true才可登入
+                options.SignIn.RequireConfirmedEmail = true;
+            }).AddEntityFrameworkStores<AppDbContext>()
+            .AddDefaultTokenProviders();//新增token provider
 
             ////建立密碼複雜度(可建立在addidentity內)
             //services.Configure<IdentityOptions>(options =>
@@ -68,8 +74,13 @@ namespace CoreLearningByYoutube
             services.AddAuthentication()
                 .AddGoogle(options =>
                 {
-                    options.ClientId = "";
-                    options.ClientSecret = "";
+                    options.ClientId = _config.GetSection("Google:ClientId").Value;
+                    options.ClientSecret = _config.GetSection("Google:ClientSecret").Value;
+                })
+                .AddFacebook(options =>
+                {
+                    options.AppId = _config.GetSection("Facebook:AppId").Value;
+                    options.AppSecret = _config.GetSection("Facebook:AppSecret").Value;
                 });
 
             //改變預設拒絕存取路徑錯誤view
@@ -91,8 +102,13 @@ namespace CoreLearningByYoutube
                 //當其一handler失敗後不執行後面的handler
                 options.InvokeHandlersAfterFailure = false;
 
+                //Claims Policy
                 options.AddPolicy("AdminRolePolicy",
                     policy => policy.RequireClaim("Admin"));
+
+                //Roles Policy
+                //options.AddPolicy("AdminRolePolicy",
+                //    policy => policy.RequireRole("Admin"));
             });
 
             //services.AddSingleton<IEmployeeRepository, MockEmployeeRepository>();
