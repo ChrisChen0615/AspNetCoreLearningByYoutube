@@ -54,9 +54,13 @@ namespace CoreLearningByYoutube
             .AddTokenProvider<CustomEmailConfirmationTokenProvider//自定義provider
                 <ApplicationUser>>("CustomEmailConfirmation");
 
-            //token期限
+            //改變所有token type期限
             services.Configure<DataProtectionTokenProviderOptions>(o =>
              o.TokenLifespan = TimeSpan.FromHours(5));
+
+            //只改變email confirm token type
+            services.Configure<CustomEmailConfirmationTokenProviderOptions>(o =>
+             o.TokenLifespan = TimeSpan.FromDays(3));
 
             ////建立密碼複雜度(可建立在addidentity內)
             //services.Configure<IdentityOptions>(options =>
