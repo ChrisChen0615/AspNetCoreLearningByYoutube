@@ -47,8 +47,16 @@ namespace CoreLearningByYoutube
 
                 //2.email confirmed必須為true才可登入
                 options.SignIn.RequireConfirmedEmail = true;
+
+                options.Tokens.EmailConfirmationTokenProvider = "CustomEmailConfirmation";
             }).AddEntityFrameworkStores<AppDbContext>()
-            .AddDefaultTokenProviders();//新增token provider
+            .AddDefaultTokenProviders()//新增token provider
+            .AddTokenProvider<CustomEmailConfirmationTokenProvider//自定義provider
+                <ApplicationUser>>("CustomEmailConfirmation");
+
+            //token期限
+            services.Configure<DataProtectionTokenProviderOptions>(o =>
+             o.TokenLifespan = TimeSpan.FromHours(5));
 
             ////建立密碼複雜度(可建立在addidentity內)
             //services.Configure<IdentityOptions>(options =>

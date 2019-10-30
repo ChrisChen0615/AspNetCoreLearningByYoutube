@@ -163,6 +163,52 @@ namespace CoreLearningByYoutube.Controllers
         }
 
         /// <summary>
+        /// 重設密碼 view
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet]
+        [AllowAnonymous]
+        public IActionResult ResetPassword(string token,string email)
+        {
+            if(token == null || email == null)
+            {
+                ModelState.AddModelError("", "無效重設密碼token");
+            }
+            return View();
+        }
+
+        /// <summary>
+        /// 重設密碼 action
+        /// </summary>
+        /// <returns></returns>
+        [HttpPost]
+        [AllowAnonymous]
+        public async Task<IActionResult> ResetPassword(ResetPasswordViewModel model)
+        {
+            if (ModelState.IsValid)
+            {
+                //取得使用者
+                var user = await _userManager.FindByEmailAsync(model.Email);
+                if (user != null)
+                {
+                    var result = await _userManager.ResetPasswordAsync(user, model.Token, model.Password);
+                    if (result.Succeeded)
+                    {
+                        return View("ResetPasswordConfirmation");
+                    }
+                    foreach(var error in result.Errors)
+                    {
+                        ModelState.AddModelError("", error.Description);
+                    }
+                    return View("ResetPasswordConfirmation");
+                }
+                return View("ForgotPasswordConfirmation");
+            }
+            return View(model);
+
+        }
+
+        /// <summary>
         /// 登入view
         /// </summary>
         /// <returns></returns>        
