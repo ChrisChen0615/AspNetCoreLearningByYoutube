@@ -3,13 +3,15 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace CoreLearningByYoutube.Models
 {
     public class Employee
     {
         public int Id { get; set; }
-
+        [NotMapped]
+        public string EncrpytedId { get; set; }
         [Display(Name = "名稱")]
         [Required(ErrorMessage = "姓名必填")]
         [MaxLength(10, ErrorMessage = "最多10個字")]

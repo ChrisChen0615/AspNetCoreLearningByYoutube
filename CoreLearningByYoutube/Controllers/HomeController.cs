@@ -4,8 +4,10 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using CoreLearningByYoutube.Models;
+using CoreLearningByYoutube.Seruirty;
 using CoreLearningByYoutube.ViewModels;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -18,20 +20,31 @@ namespace CoreLearningByYoutube.Controllers
         private readonly IEmployeeRepository _employeeRepository;
         private readonly IHostingEnvironment _hostingEnviroment;
         private readonly ILogger _logger;
+        private readonly IDataProtector _proctector;        
 
         public HomeController(IEmployeeRepository employeeRepository,
             IHostingEnvironment hostingEnviroment,
-            ILogger<HomeController> logger)
+            ILogger<HomeController> logger,
+            IDataProtectionProvider dataProtectionProvider,
+            DataProtectionPurposeStrings purposeStrings)
         {
             _employeeRepository = employeeRepository;
             _hostingEnviroment = hostingEnviroment;
             _logger = logger;
+            _proctector = dataProtectionProvider.CreateProtector(purposeStrings.EmployeeIdRouteValue);
+
+
         }
 
         [AllowAnonymous]
         public IActionResult Index()
         {
-            var model = _employeeRepository.GetAllEmployee();
+            var model = _employeeRepository.GetAllEmployee()
+                .Select(e =>
+                {
+                    e.EncrpytedId = _proctector.Protect(e.Id.ToString());
+                    return e;
+                });
             return View(model);
         }
 
@@ -41,7 +54,7 @@ namespace CoreLearningByYoutube.Controllers
         /// <param name="id"></param>
         /// <returns></returns>   
         [AllowAnonymous]
-        public ViewResult Details(int? id)
+        public ViewResult Details(string id)
         {
             //throw new Exception("有例外發生囉!!!");
             _logger.LogTrace("Trace log");
@@ -51,11 +64,13 @@ namespace CoreLearningByYoutube.Controllers
             _logger.LogError("Error log");
             _logger.LogCritical("Critical log");
 
-            var employee = _employeeRepository.GetEmployee(id.Value);
+            int employeeId = Convert.ToInt32(_proctector.Unprotect(id));
+
+            var employee = _employeeRepository.GetEmployee(employeeId);
             if(employee == null)
             {
                 Response.StatusCode = 404;
-                return View("EmployeeNotFound", id.Value);
+                return View("EmployeeNotFound", employeeId);
             }
 
             var model = new HomeDetailsViewModel

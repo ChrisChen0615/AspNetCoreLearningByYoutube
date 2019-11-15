@@ -49,6 +49,9 @@ namespace CoreLearningByYoutube
                 options.SignIn.RequireConfirmedEmail = true;
 
                 options.Tokens.EmailConfirmationTokenProvider = "CustomEmailConfirmation";
+
+                options.Lockout.MaxFailedAccessAttempts = 3;
+                options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5);
             }).AddEntityFrameworkStores<AppDbContext>()
             .AddDefaultTokenProviders()//新增token provider
             .AddTokenProvider<CustomEmailConfirmationTokenProvider//自定義provider
@@ -128,6 +131,9 @@ namespace CoreLearningByYoutube
             services.AddScoped<IEmployeeRepository, SQLEmployeeRepository>();
             //services.AddScoped<IEmployeeRepository, MockEmployeeRepository>();
             //services.AddTransient<IEmployeeRepository, MockEmployeeRepository>();
+
+            //inject自定義加密字串
+            services.AddSingleton<DataProtectionPurposeStrings>();
 
             /*
              * 以下為dependcy injection三種方法範例
